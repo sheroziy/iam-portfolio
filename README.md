@@ -63,9 +63,30 @@ SAML integration SP and IdP config (screenshot)
 SAML assertion screenshot (redact any sensitive values)
 JWT claims screenshot
 
+Auth0 OIDC flow — what you configured and the sequence of redirects:
+I configured OpenID Connect single sign-on between Auth0 (identity provider — proves who the user is) and Salesforce (service provider — the app being logged into). In Salesforce I set up a Connected App and an Auth Provider pointing at my Auth0 tenant's authorize, token, and userinfo endpoints; in Auth0 I created a matching application with the Salesforce callback URL.
+
+```
+Salesforce (Service Provider)
+      |  user hits login → redirected to Auth0
+      v
+Auth0 Universal Login (Identity Provider)
+      |  test user authenticates
+      v
+Salesforce /authcallback
+  - receives identity: email, provider "Open ID Connect", auth0| user ID
+  - SSO confirmed
+```
+
+![Salesforce authcallback showing the authenticated Auth0 test user](week-04-auth0-ciam/screenshots/week04-salesforce-sso-success.png)
+Salesforce authcallback showing the authenticated Auth0 test user — provider "Open ID Connect" confirms the OIDC federation worked.
+
+How federation connects to the IGA layer you built in Sessions 2 and 3:
+In Weeks 2–3 I built the IGA side — midPoint provisioning governed accounts into the directory from an HR source. Federation is the layer on top: once an identity exists, OIDC lets that user log into an external app like Salesforce using their central identity. IGA answers "who exists and what may they have"; federation answers "how they prove who they are at login."
+
 What I built: I configured single sign-on between Salesforce and Auth0 using OpenID Connect, with Auth0 as the identity provider (the service that proves who the user is) and Salesforce as the service provider (the app the user logs into). I created a test user in Auth0, set up the connected app and auth provider on both sides, and confirmed the flow worked by seeing Auth0 pass the user's identity into Salesforce.
 
-Resume bullet: Implemented B2B single sign-on federating Salesforce (service provider) with Auth0 (identity provider) over OpenID Connect — configuring the connected app, OAuth scopes, and provider endpoints, then validating end-to-end federation by confirming identity claims flowed from Auth0 into Salesforce.
+Resume bullet: Implemented B2B single sign-on federating Salesforce (service provider) with Auth0 (identity provider) over OpenID Connect — configured the connected app, OAuth scopes, and provider endpoints, and validated end-to-end federation by confirming identity claims flowed from Auth0 into Salesforce.
 
 
 Saturday 5 - Career Preparation
