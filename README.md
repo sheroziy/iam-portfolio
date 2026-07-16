@@ -1,5 +1,5 @@
 SimplifyIAM IAM Implementation Portfolio
-Cohort: SimplifyIAM Live Cohort  Name: Sheroziy  LinkedIn: [LinkedIn URL] Completed: May 2026
+Cohort: SimplifyIAM Live Cohort  Name: Sheroziy  LinkedIn: [LinkedIn URL] In progress — SimplifyIAM Live Cohort
 
 
 What I Built
