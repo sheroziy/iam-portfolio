@@ -63,9 +63,9 @@ SAML integration SP and IdP config (screenshot)
 SAML assertion screenshot (redact any sensitive values)
 JWT claims screenshot
 
-What I built: [Fill in - 2 sentences max]
+What I built: I configured single sign-on between Salesforce and Auth0 using OpenID Connect, with Auth0 as the identity provider (the service that proves who the user is) and Salesforce as the service provider (the app the user logs into). I created a test user in Auth0, set up the connected app and auth provider on both sides, and confirmed the flow worked by seeing Auth0 pass the user's identity into Salesforce.
 
-Resume bullet: [Your bullet here]
+Resume bullet: Implemented B2B single sign-on federating Salesforce (service provider) with Auth0 (identity provider) over OpenID Connect — configuring the connected app, OAuth scopes, and provider endpoints, then validating end-to-end federation by confirming identity claims flowed from Auth0 into Salesforce.
 
 
 Saturday 5 - Career Preparation
