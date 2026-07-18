@@ -63,30 +63,55 @@ SAML integration SP and IdP config (screenshot)
 SAML assertion screenshot (redact any sensitive values)
 JWT claims screenshot
 
-Auth0 OIDC flow — what you configured and the sequence of redirects:
-I configured OpenID Connect single sign-on between Auth0 (identity provider — proves who the user is) and Salesforce (service provider — the app being logged into). In Salesforce I set up a Connected App and an Auth Provider pointing at my Auth0 tenant's authorize, token, and userinfo endpoints; in Auth0 I created a matching application with the Salesforce callback URL.
+What I built: Configured Auth0 as the Identity Provider for Salesforce using OIDC, so a test user logs into Salesforce with their Auth0 identity. Then built granular consent management — separate consent switches stored in `app_metadata`, surfaced as custom JWT claims by a post-login Action, and verified that withdrawing consent updates the very next token.
 
 ```
-Salesforce (Service Provider)
-      |  user hits login → redirected to Auth0
-      v
-Auth0 Universal Login (Identity Provider)
-      |  test user authenticates
-      v
-Salesforce /authcallback
-  - receives identity: email, provider "Open ID Connect", auth0| user ID
-  - SSO confirmed
+E1: SSO flow
+User → Salesforce (SP) → Auth0 (IdP) /authorize → Universal Login → token → back to Salesforce → logged in
+
+E2: Consent flow
+app_metadata (consent switches) → Post-Login Action → custom claims in ID token (JWT) → downstream systems obey
 ```
 
-![Salesforce authcallback showing the authenticated Auth0 test user](week-04-auth0-ciam/screenshots/week04-salesforce-sso-success.png)
-Salesforce authcallback showing the authenticated Auth0 test user — provider "Open ID Connect" confirms the OIDC federation worked.
+How I did it
+
+E1 — Salesforce SSO via OIDC
+- Created a free Salesforce Developer Edition org and a Connected App with OAuth scopes `openid profile email`
+- Created an Auth0 Regular Web Application ("Salesforce Partner Portal")
+- Configured an Auth Provider in Salesforce (type: OpenID Connect) pointing at my Auth0 tenant's `/authorize`, `/oauth/token`, and `/userinfo` endpoints
+- Tested with the Test-Only Initialization URL → Auth0 Universal Login → redirected back into Salesforce as my test user
+
+E2 — Granular Consent Management
+- Stored per-category consent (`terms_accepted`, `marketing_emails`, `analytics_tracking`, `third_party_sharing`) in the test user's `app_metadata` (GDPR Article 7 requires consent to be specific, not one bundled checkbox)
+- Wrote a Post-Login Action that blocks login if terms aren't accepted at the current version, and surfaces each consent category as its own JWT claim
+- Built an authorize URL with `response_type=id_token` and `redirect_uri=https://jwt.io` to decode tokens
+- Simulated consent withdrawal: flipped `analytics_tracking` to `false` in app_metadata → next login's token immediately showed `false`
+
+What went wrong and how I fixed it
+
+| Problem | Cause | Fix |
+|---|---|---|
+| "Callback URL mismatch" on first SSO test | The redirect URI Salesforce sent wasn't on Auth0's allowed list (my real org URL had `.develop.` in it) | Copied the exact Callback URL from Salesforce's Auth Provider page into Auth0's Allowed Callback URLs |
+| "Oops, something went wrong" on the jwt.io authorize URL | Error details + Monitoring → Logs showed `invalid_request: Unknown client` — the client_id in my URL had a look-alike character typo | Copied the Client ID with Auth0's copy button instead of retyping it |
+| Wasn't sure which credentials to use at Universal Login | Mixed up admin login vs. tenant users | Learned the separation: dashboard admin manages config; the test user (in User Management) is who logs in through the authorize URL |
+
+Biggest takeaway from debugging: read the actual error. Auth0's "See details for this error" and Monitoring → Logs give the real reason — guessing at settings doesn't.
 
 How federation connects to the IGA layer you built in Sessions 2 and 3:
 In Weeks 2–3 I built the IGA side — midPoint provisioning governed accounts into the directory from an HR source. Federation is the layer on top: once an identity exists, OIDC lets that user log into an external app like Salesforce using their central identity. IGA answers "who exists and what may they have"; federation answers "how they prove who they are at login."
 
-What I built: I configured single sign-on between Salesforce and Auth0 using OpenID Connect, with Auth0 as the identity provider (the service that proves who the user is) and Salesforce as the service provider (the app the user logs into). I created a test user in Auth0, set up the connected app and auth provider on both sides, and confirmed the flow worked by seeing Auth0 pass the user's identity into Salesforce.
+Screenshots
 
-Resume bullet: Implemented B2B single sign-on federating Salesforce (service provider) with Auth0 (identity provider) over OpenID Connect — configured the connected app, OAuth scopes, and provider endpoints, and validated end-to-end federation by confirming identity claims flowed from Auth0 into Salesforce.
+![Salesforce Auth Provider configured with Auth0 endpoints](images/week4/e1-auth-provider-config.png)
+*Salesforce Auth Provider pointing at my Auth0 tenant's OIDC endpoints*
+
+![Callback URL mismatch error](images/week4/e1-callback-mismatch.png)
+*The callback mismatch that taught me how Auth0's allowed-list protects redirects*
+
+![Salesforce authcallback showing the authenticated Auth0 test user](week-04-auth0-ciam/screenshots/week04-salesforce-sso-success.png)
+*Salesforce authcallback showing the authenticated Auth0 test user — provider "Open ID Connect" confirms the OIDC federation worked*
+
+Resume bullet: Implemented B2B federation with Auth0 as OIDC Identity Provider for Salesforce, and built GDPR-aligned granular consent management using Auth0 Actions to surface per-category consent as custom JWT claims consumed by downstream systems.
 
 
 Saturday 5 - Career Preparation
